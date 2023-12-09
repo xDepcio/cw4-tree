@@ -34,6 +34,21 @@ def caluclate_gain_for_attribute(data, attribute):
     return gain
 
 
+def build_tree(data, tree=None):
+    if tree is None:
+        tree = {}
+    feature = get_most_informative_feature(data)
+    attribute_values = np.unique(data[feature])
+    for value in attribute_values:
+        sub_data = data[data[feature] == value]
+        class_counts = sub_data["PlayTennis"].value_counts()
+        if len(class_counts) == 1:
+            tree[feature] = class_counts.index[0]
+        else:
+            tree[feature] = build_tree(sub_data)
+    return tree
+
+
 def main():
     data = load_csv_into_pandas()
     # cut day column
@@ -49,6 +64,8 @@ def main():
         "calculating gain for outlook:", caluclate_gain_for_attribute(data, "Outlook")
     )
     print("Most informative feature:", get_most_informative_feature(data))
+    tree = build_tree(data)
+    print("Decision Tree:", tree)
 
 
 if __name__ == "__main__":
