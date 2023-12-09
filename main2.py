@@ -31,18 +31,43 @@ def get_most_informative_feature(data):
 
 
 def build_tree(data, tree=None):
+    # Get the feature with the highest information gain
     feature = get_most_informative_feature(data)
+
+    # If there's no more features to split on, return the most common class
+    if all(data[col].nunique() == 1 for col in data.columns[:-1]):
+        return Counter(data.iloc[:, -1]).most_common(1)[0][0]
+
+    # If all instances belong to the same class, return this class
+    if len(np.unique(data.iloc[:, -1])) == 1:
+        return np.unique(data.iloc[:, -1])[0]
+
+    # Continue building the tree
     if tree is None:
         tree = {}
         tree[feature] = {}
+
     for value in np.unique(data[feature]):
         sub_data = data.where(data[feature] == value).dropna()
-        class_value, counts = np.unique(sub_data["PlayTennis"], return_counts=True)
+        class_value, counts = np.unique(sub_data.iloc[:, -1], return_counts=True)
         if len(counts) == 1:
             tree[feature][value] = class_value[0]
         else:
             tree[feature][value] = build_tree(sub_data)
+
     return tree
+    # feature = get_most_informative_feature(data)
+    # if tree is None:
+    #     tree = {}
+    #     tree[feature] = {}
+    # for value in np.unique(data[feature]):
+    #     sub_data = data.where(data[feature] == value).dropna()
+    #     class_value, counts = np.unique(sub_data.iloc[:, -1], return_counts=True)
+    #     if len(counts) == 1:
+    #         tree[feature][value] = class_value[0]
+    #     else:
+    #         tree[feature][value] = build_tree(sub_data)
+    # return tree
 
 
 def classify(instance, tree):
@@ -61,17 +86,32 @@ def classify(instance, tree):
 
 
 def main():
-    data = pd.read_csv("test-data.csv")
+    # data = pd.read_csv("test-data.csv")
+    data = pd.read_csv(
+        "data/breast-cancer.data",
+        names=[
+            "Class",
+            "Age",
+            "Menopause",
+            "Tumor-size",
+            "Inv-nodes",
+            "Node-caps",
+            "Deg-malig",
+            "Breast",
+            "Breast-quad",
+            "Irradiat",
+        ],
+    )
     # cut day column
-    data = data.drop("Day", axis=1)
+    # data = data.drop("Day", axis=1)
     tree = build_tree(data)
     print(tree)
-    new_data_to_classify = pd.Series(
-        {"Outlook": "Rain", "Temperature": "Hot", "Humidity": "High", "Wind": "Weak"}
-    )
-    instance = data.iloc[0]  # Use the first row of the dataset as an example
+    # new_data_to_classify = pd.Series(
+    #     {"Outlook": "Rain", "Temperature": "Hot", "Humidity": "High", "Wind": "Weak"}
+    # )
+    instance = data.iloc[128]  # Use the first row of the dataset as an example
     print(instance)
-    print("Classification of the instance: ", classify(new_data_to_classify, tree))
+    print("Classification of the instance: ", classify(instance, tree))
 
 
 if __name__ == "__main__":
