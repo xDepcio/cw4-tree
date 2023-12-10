@@ -102,6 +102,21 @@ def load_data_frame(
     return data
 
 
+def split_train_data(
+    data: pd.DataFrame, train_size: float = 0.8
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    train_data = pd.DataFrame()
+    test_data = pd.DataFrame()
+
+    for row in data.itertuples():
+        if np.random.rand() < train_size:
+            train_data = pd.concat([train_data, row])
+        else:
+            test_data = pd.concat([test_data, row])
+
+    return train_data, test_data
+
+
 def main():
     # data = pd.read_csv("test-data.csv")
     data: pd.DataFrame = load_data_frame(
@@ -120,6 +135,7 @@ def main():
             "irradiat",
         ],
     )
+    train_data, test_data = split_train_data(data, train_size=3 / 5)
     # cut day column
     # data = data.drop("Day", axis=1)
     tree = build_tree(data)
