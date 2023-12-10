@@ -108,17 +108,24 @@ def split_train_data(
     train_data = pd.DataFrame()
     test_data = pd.DataFrame()
 
-    for row in data.itertuples():
+    for row in data.iloc:
         if np.random.rand() < train_size:
-            train_data = pd.concat([train_data, row])
+            train_data = pd.concat([train_data, pd.DataFrame([row])])
         else:
-            test_data = pd.concat([test_data, row])
+            test_data = pd.concat([test_data, pd.DataFrame([row])])
 
     return train_data, test_data
 
 
+def calculate_accuracy(test_data: pd.DataFrame, tree: TreeType):
+    correct = 0
+    for row in test_data.iloc:
+        if classify(row, tree) == row[-1]:
+            correct += 1
+    return correct / len(test_data)
+
+
 def main():
-    # data = pd.read_csv("test-data.csv")
     data: pd.DataFrame = load_data_frame(
         path="data/breast-cancer.data",
         class_col="Class",
@@ -138,12 +145,15 @@ def main():
     train_data, test_data = split_train_data(data, train_size=3 / 5)
     # cut day column
     # data = data.drop("Day", axis=1)
-    tree = build_tree(data)
+    tree = build_tree(train_data)
     print(tree)
+    accuracy = calculate_accuracy(test_data, tree)
+    print("Accuracy: ", accuracy)
     # new_data_to_classify = pd.Series(
     #     {"Outlook": "Rain", "Temperature": "Hot", "Humidity": "High", "Wind": "Weak"}
     # )
     instance = data.iloc[1]  # Use the first row of the dataset as an example
+    instance = instance.drop("Class")
     print(instance)
     print("Classification of the instance: ", classify(instance, tree))
 
