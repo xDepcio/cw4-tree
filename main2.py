@@ -134,29 +134,43 @@ def calculate_accuracy(test_data: pd.DataFrame, tree: Node):
 
 def main():
     data: pd.DataFrame = load_data_frame(
-        path="data/breast-cancer.data",
-        # class_col="PlayTennis",
-        class_col="Class",
+        path="data/mushroom/agaricus-lepiota.data",
+        class_col="Edibility",
         col_names=[
-            # "Day",
-            # "Outlook",
-            # "Temp",
-            # "Humidity",
-            # "Wind",
-            # "PlayTennis",
-            "Class",
-            "age",
-            "menopause",
-            "tumor-size",
-            "inv-nodes",
-            "node-caps",
-            "deg-malig",
-            "breast",
-            "breast-quad",
-            "irradiat",
+            "Edibility",
+            "Cap-shape",
+            "Cap-surface",
+            "Cap-color",
+            "Bruises?",
+            "Odor",
+            "Gill-attachment",
+            "Gill-spacing",
+            "Gill-size",
+            "Gill-color",
+            "Stalk-shape",
+            "Stalk-root",
+            "Stalk-surface-above-ring",
+            "Stalk-surface-below-ring",
+            "Stalk-color-above-ring",
+            "Stalk-color-below-ring",
+            "Veil-type",
+            "Veil-color",
+            "Ring-number",
+            "Ring-type",
+            "Spore-print-color",
+            "Population",
+            "Habitat",
+            # "Class",
+            # "age",
+            # "menopause",
+            # "tumor-size",
+            # "inv-nodes",
+            # "node-caps",
+            # "deg-malig",
+            # "breast",
+            # "breast-quad",
+            # "irradiat",
         ],
-        # skiprows=1,
-        # cut_cols=["Day"],
     )
     train_data, test_data = split_train_data(data, train_size=3 / 5)
     # data = data.drop("Day", axis=1)
@@ -166,7 +180,7 @@ def main():
     print("Accuracy: ", accuracy)
 
     instance = data.iloc[1]  # Use the first row of the dataset as an example
-    instance = instance.drop("Class")
+    instance = instance.drop("Edibility")
     print(instance)
     print("Classification of the instance: ", classify(instance, tree))
 
