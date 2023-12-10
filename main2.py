@@ -4,6 +4,16 @@ import numpy as np
 from collections import Counter
 
 
+class Node:
+    def __init__(self, most_common_attribute_choice: str):
+        self.decision_attribute: str = ""
+        self.decision_attribute_choices: Dict[str, Union[Node, str]] = {}
+        self.most_common_attribute_choice = most_common_attribute_choice
+
+    def add_child(self, child_name: str, child: Union["Node", str]):
+        self.decision_attribute_choices[child_name] = child
+
+
 def calculate_entropy(data: pd.DataFrame):
     class_col = data.iloc[:, -1]
     entropy = 0
@@ -32,10 +42,10 @@ def get_most_informative_attribute(data: pd.DataFrame) -> str:
     return max(attribute_gains, key=lambda x: x[1])[0]
 
 
-type TreeType = Dict[str, Union["TreeType", str]]
+# type TreeType = Dict[str, Union["TreeType", str]]
 
 
-def build_tree(data: pd.DataFrame, tree: TreeType | None = None) -> TreeType:
+def build_tree(data: pd.DataFrame, tree: Node | None = None) -> Node:
     # Get the feature with the highest information gain
     attribute = get_most_informative_attribute(data)
 
@@ -53,8 +63,7 @@ def build_tree(data: pd.DataFrame, tree: TreeType | None = None) -> TreeType:
 
     # Continue building the tree
     if tree is None:
-        tree = {}
-        tree[attribute] = {}
+        tree = Node(Counter(data[data.columns[-1]]).most_common(1)[0][0])
 
     attr_unique_values = np.unique(data[attribute])
     for value in attr_unique_values:
@@ -62,26 +71,24 @@ def build_tree(data: pd.DataFrame, tree: TreeType | None = None) -> TreeType:
         classes_col = sub_data[sub_data.columns[-1]]  # Get the classes column
         class_value, counts = np.unique(classes_col, return_counts=True)
         if len(counts) == 1:
-            tree[attribute][value] = class_value[0]
+            tree.decision_attribute = attribute
+            tree.add_child(value, class_value[0])
         else:
-            tree[attribute][value] = build_tree(sub_data)
+            tree.decision_attribute = attribute
+            tree.add_child(value, build_tree(sub_data))
 
     return tree
 
 
-def classify(instance: pd.Series, tree: TreeType):
-    prediction = 0
-    for key in tree.keys():
-        value = instance[key]
-        tree = tree[key][value]
+def classify(instance: pd.Series, tree: Node):
+    if isinstance(tree, str):
+        return tree
 
-        if type(tree) is dict:
-            prediction = classify(instance, tree)
-        else:
-            prediction = tree
-            break
-
-    return prediction
+    attribute = tree.decision_attribute
+    attribute_value = instance[attribute]
+    if attribute_value not in tree.decision_attribute_choices:
+        return tree.most_common_attribute_choice
+    return classify(instance, tree.decision_attribute_choices[attribute_value])
 
 
 def load_data_frame(
@@ -117,7 +124,7 @@ def split_train_data(
     return train_data, test_data
 
 
-def calculate_accuracy(test_data: pd.DataFrame, tree: TreeType):
+def calculate_accuracy(test_data: pd.DataFrame, tree: Node):
     correct = 0
     for row in test_data.iloc:
         if classify(row, tree) == row[-1]:
@@ -128,8 +135,15 @@ def calculate_accuracy(test_data: pd.DataFrame, tree: TreeType):
 def main():
     data: pd.DataFrame = load_data_frame(
         path="data/breast-cancer.data",
+        # class_col="PlayTennis",
         class_col="Class",
         col_names=[
+            # "Day",
+            # "Outlook",
+            # "Temp",
+            # "Humidity",
+            # "Wind",
+            # "PlayTennis",
             "Class",
             "age",
             "menopause",
@@ -141,17 +155,16 @@ def main():
             "breast-quad",
             "irradiat",
         ],
+        # skiprows=1,
+        # cut_cols=["Day"],
     )
     train_data, test_data = split_train_data(data, train_size=3 / 5)
-    # cut day column
     # data = data.drop("Day", axis=1)
     tree = build_tree(train_data)
     print(tree)
     accuracy = calculate_accuracy(test_data, tree)
     print("Accuracy: ", accuracy)
-    # new_data_to_classify = pd.Series(
-    #     {"Outlook": "Rain", "Temperature": "Hot", "Humidity": "High", "Wind": "Weak"}
-    # )
+
     instance = data.iloc[1]  # Use the first row of the dataset as an example
     instance = instance.drop("Class")
     print(instance)
