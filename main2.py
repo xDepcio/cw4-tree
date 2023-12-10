@@ -1,80 +1,79 @@
+from typing import Dict, List, Union
 import pandas as pd
 import numpy as np
 from collections import Counter
 
 
-def calculate_entropy(data):
-    labels = data.iloc[:, -1]
+def calculate_entropy(data: pd.DataFrame):
+    class_col = data.iloc[:, -1]
     entropy = 0
-    for label in np.unique(labels):
-        probability = np.sum(labels == label) / len(labels)
+    for unique_class_val in np.unique(class_col):
+        probability = np.sum(class_col == unique_class_val) / len(class_col)
         entropy -= probability * np.log2(probability)
     return entropy
 
 
-def calculate_gain(data, attribute):
+def calculate_gain(data: pd.DataFrame, attribute: str):
     total_entropy = calculate_entropy(data)
     values, counts = np.unique(data[attribute], return_counts=True)
-    weighted_entropy = sum(
+    values_entropy = sum(
         (counts[i] / np.sum(counts))
         * calculate_entropy(data.where(data[attribute] == values[i]).dropna())
         for i in range(len(values))
     )
-    return total_entropy - weighted_entropy
+    return total_entropy - values_entropy
 
 
-def get_most_informative_feature(data):
-    feature_gains = {
-        feature: calculate_gain(data, feature) for feature in data.columns[:-1]
-    }
-    return max(feature_gains, key=feature_gains.get)
+def get_most_informative_attribute(data: pd.DataFrame) -> str:
+    attribute_gains = [
+        (attribute, calculate_gain(data, attribute)) for attribute in data.columns[:-1]
+    ]
+
+    return max(attribute_gains, key=lambda x: x[1])[0]
 
 
-def build_tree(data, tree=None):
+type TreeType = Dict[str, Union["TreeType", str]]
+
+
+def build_tree(data: pd.DataFrame, tree: TreeType | None = None) -> TreeType:
     # Get the feature with the highest information gain
-    feature = get_most_informative_feature(data)
+    attribute = get_most_informative_attribute(data)
 
-    # If there's no more features to split on, return the most common class
-    if all(data[col].nunique() == 1 for col in data.columns[:-1]):
-        return Counter(data.iloc[:, -1]).most_common(1)[0][0]
+    # If all attrubites have only one value, return the most common class
+    each_col_ony_one_val = [
+        data[col_name].nunique() == 1 for col_name in data.columns[:-1]
+    ]
+    if all(each_col_ony_one_val):
+        # Counter - buffed dictionary
+        return Counter(data[data.columns[-1]]).most_common(1)[0][0]
 
-    # If all instances belong to the same class, return this class
-    if len(np.unique(data.iloc[:, -1])) == 1:
-        return np.unique(data.iloc[:, -1])[0]
+    # If class col has only one value, return it
+    if len(np.unique(data[data.columns[-1]])) == 1:
+        return np.unique(data[data.columns[-1]])[0]
 
     # Continue building the tree
     if tree is None:
         tree = {}
-        tree[feature] = {}
+        tree[attribute] = {}
 
-    for value in np.unique(data[feature]):
-        sub_data = data.where(data[feature] == value).dropna()
-        class_value, counts = np.unique(sub_data.iloc[:, -1], return_counts=True)
+    attr_unique_values = np.unique(data[attribute])
+    for value in attr_unique_values:
+        sub_data = data.where(data[attribute] == value).dropna()
+        classes_col = sub_data[sub_data.columns[-1]]  # Get the classes column
+        class_value, counts = np.unique(classes_col, return_counts=True)
         if len(counts) == 1:
-            tree[feature][value] = class_value[0]
+            tree[attribute][value] = class_value[0]
         else:
-            tree[feature][value] = build_tree(sub_data)
+            tree[attribute][value] = build_tree(sub_data)
 
     return tree
-    # feature = get_most_informative_feature(data)
-    # if tree is None:
-    #     tree = {}
-    #     tree[feature] = {}
-    # for value in np.unique(data[feature]):
-    #     sub_data = data.where(data[feature] == value).dropna()
-    #     class_value, counts = np.unique(sub_data.iloc[:, -1], return_counts=True)
-    #     if len(counts) == 1:
-    #         tree[feature][value] = class_value[0]
-    #     else:
-    #         tree[feature][value] = build_tree(sub_data)
-    # return tree
 
 
-def classify(instance, tree):
-    for nodes in tree.keys():
-        value = instance[nodes]
-        tree = tree[nodes][value]
-        prediction = 0
+def classify(instance: pd.Series, tree: TreeType):
+    prediction = 0
+    for key in tree.keys():
+        value = instance[key]
+        tree = tree[key][value]
 
         if type(tree) is dict:
             prediction = classify(instance, tree)
@@ -85,21 +84,40 @@ def classify(instance, tree):
     return prediction
 
 
+def load_data_frame(
+    path: str,
+    class_col: str,
+    col_names: List[str],
+    skiprows: int = 0,
+    cut_cols: List[str] = [],
+) -> pd.DataFrame:
+    data = pd.read_csv(path, skiprows=skiprows, names=col_names)
+
+    cols = list(data.columns.values)
+    cols.pop(cols.index(class_col))
+    data = data[cols + [class_col]]
+
+    for col in cut_cols:
+        data = data.drop(col, axis=1)
+    return data
+
+
 def main():
     # data = pd.read_csv("test-data.csv")
-    data = pd.read_csv(
-        "data/breast-cancer.data",
-        names=[
+    data: pd.DataFrame = load_data_frame(
+        path="data/breast-cancer.data",
+        class_col="Class",
+        col_names=[
             "Class",
-            "Age",
-            "Menopause",
-            "Tumor-size",
-            "Inv-nodes",
-            "Node-caps",
-            "Deg-malig",
-            "Breast",
-            "Breast-quad",
-            "Irradiat",
+            "age",
+            "menopause",
+            "tumor-size",
+            "inv-nodes",
+            "node-caps",
+            "deg-malig",
+            "breast",
+            "breast-quad",
+            "irradiat",
         ],
     )
     # cut day column
@@ -109,7 +127,7 @@ def main():
     # new_data_to_classify = pd.Series(
     #     {"Outlook": "Rain", "Temperature": "Hot", "Humidity": "High", "Wind": "Weak"}
     # )
-    instance = data.iloc[128]  # Use the first row of the dataset as an example
+    instance = data.iloc[1]  # Use the first row of the dataset as an example
     print(instance)
     print("Classification of the instance: ", classify(instance, tree))
 
