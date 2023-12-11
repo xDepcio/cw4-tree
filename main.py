@@ -45,12 +45,12 @@ class Tree:
 
         for row in test_data.iloc:
             if self.classify(row, self.root) == positive_class:
-                if row[-1] == positive_class:
+                if row.iloc[-1] == positive_class:
                     tp += 1
                 else:
                     fp += 1
             else:
-                if row[-1] == negative_class:
+                if row.iloc[-1] == negative_class:
                     tn += 1
                 else:
                     fn += 1
@@ -70,7 +70,7 @@ class Tree:
     def _calculate_accuracy(self, test_data: pd.DataFrame, tree: Node):
         correct = 0
         for row in test_data.iloc:
-            if self.classify(row, tree) == row[-1]:
+            if self.classify(row, tree) == row.iloc[-1]:
                 correct += 1
         return correct / len(test_data)
 
