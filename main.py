@@ -2,6 +2,7 @@ from typing import Dict, List, Union
 import pandas as pd
 import numpy as np
 from collections import Counter
+import numpy.typing as npt
 
 from utils import calculate_entropy_u, load_data_frame_u, split_train_data_u
 
@@ -35,6 +36,26 @@ class Tree:
         return self.classify(
             instance, tree.decision_attribute_choices[attribute_value]  # type: ignore
         )
+
+    def calculate_confusion_matrix(
+        self, test_data: pd.DataFrame, positive_class: str, negative_class: str
+    ):
+        """(TP, TN, FP, FN)"""
+        tp, tn, fp, fn = 0, 0, 0, 0
+
+        for row in test_data.iloc:
+            if self.classify(row, self.root) == positive_class:
+                if row[-1] == positive_class:
+                    tp += 1
+                else:
+                    fp += 1
+            else:
+                if row[-1] == negative_class:
+                    tn += 1
+                else:
+                    fn += 1
+
+        return tp, tn, fp, fn
 
     def _calculate_gain(self, data: pd.DataFrame, attribute: str):
         total_entropy = calculate_entropy_u(data)
@@ -99,6 +120,13 @@ class Tree:
 def main():
     tree = Tree("data/breast-cancer/breast-cancer.data")
     print(tree.accuracy)
+    print(
+        tree.calculate_confusion_matrix(
+            test_data=tree.test_data,
+            positive_class="recurrence-events",
+            negative_class="no-recurrence-events",
+        )
+    )
 
 
 if __name__ == "__main__":
