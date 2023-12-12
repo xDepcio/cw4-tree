@@ -12,7 +12,6 @@ def load_data_frame_u(
 
     cols = list(data.columns)
     cols = cols[1:] + [cols[0]]
-    # cols.pop()
     data = data[cols]
 
     for col in cut_cols:
@@ -42,3 +41,7 @@ def calculate_entropy_u(data: pd.DataFrame):
         probability = np.sum(class_col == unique_class_val) / len(class_col)
         entropy -= probability * np.log2(probability)
     return entropy
+
+
+# def remove_data_duplicate(data: pd.DataFrame) -> pd.DataFrame:
+#     return data.drop_duplicates(subset=data.columns[1:], keep=False)
