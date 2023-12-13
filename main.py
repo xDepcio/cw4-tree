@@ -1,8 +1,8 @@
-from typing import Dict, List, Union
-import pandas as pd
-import numpy as np
 from collections import Counter
-import numpy.typing as npt
+from typing import Dict, Union
+
+import numpy as np
+import pandas as pd
 
 from utils import calculate_entropy_u, load_data_frame_u, split_train_data_u
 
@@ -88,24 +88,22 @@ class Tree:
             data[col_name].nunique() == 1 for col_name in data.columns[1:]
         ]
         if all(each_col_ony_one_val):
-            # Counter - buffed dictionary
+            # Counter - dict with utils
             return Counter(data[data.columns[0]]).most_common(1)[0][0]
 
         # If class col has only one value, return it
         if len(np.unique(data[data.columns[0]])) == 1:
             return np.unique(data[data.columns[0]])[0]
 
-        # Get the feature with the highest information gain
         attribute_idx = self._get_most_informative_attribute_idx(data)
 
-        # Continue building the tree
         if tree is None:
             tree = Node(Counter(data[0]).most_common(1)[0][0])
 
         attr_unique_values = np.unique(data[attribute_idx])
         for value in attr_unique_values:
             sub_data = data.where(data[attribute_idx] == value).dropna()
-            classes_col = sub_data[sub_data.columns[0]]  # Get the classes column
+            classes_col = sub_data[sub_data.columns[0]]
             class_value, counts = np.unique(classes_col, return_counts=True)
             if len(counts) == 1:
                 tree.decision_attribute_idx = attribute_idx
@@ -119,17 +117,17 @@ class Tree:
 
 
 def main():
-    ALGO_RUNS = 10
+    ALGO_RUNS = 20
 
     total_acc1 = 0
     all_confs1 = []
     for _ in range(ALGO_RUNS):
-        treeBreastCancer = Tree("data/breast-cancer/breast-cancer-new.data")
+        treeBreastCancer = Tree("data/breast-cancer/breast-cancer-new-2.data")
         acc1 = treeBreastCancer.accuracy
         conf1 = treeBreastCancer.calculate_confusion_matrix(
             test_data=treeBreastCancer.test_data,
-            positive_class="recurrence-events",
-            negative_class="no-recurrence-events",
+            positive_class="no-recurrence-events",
+            negative_class="recurrence-events",
         )
         total_acc1 += acc1
         all_confs1.append(conf1)
@@ -138,29 +136,43 @@ def main():
     avg_conf1 = np.mean(all_confs1, axis=0)
     print(f"Breast Cancer Accuracy: {avg_acc1}, Confusion Matrix: {avg_conf1}")
 
-    # total_acc2 = 0
-    # all_confs2 = []
-    # for _ in range(ALGO_RUNS):
-    #     treeMushroom = Tree("data/mushroom/agaricus-lepiota-new.data")
-    #     acc2 = treeMushroom.accuracy
-    #     conf2 = treeMushroom.calculate_confusion_matrix(
-    #         test_data=treeMushroom.test_data,
-    #         positive_class="e",
-    #         negative_class="p",
-    #     )
-    #     total_acc2 += acc2
-    #     all_confs2.append(conf2)
+    TP, TN, FP, FN = avg_conf1
+    czulosc = TP / (TP + FN)
+    swoistosc = TN / (TN + FP)
+    precyzja = TP / (TP + FP)
+    dokladnosc = (TP + TN) / (TP + TN + FP + FN)
+    print(f"czulosc: {czulosc}")
+    print(f"swoistosc: {swoistosc}")
+    print(f"precyzja: {precyzja}")
+    print(f"dokladnosc: {dokladnosc}")
 
-    # avg_acc2 = total_acc2 / ALGO_RUNS
-    # avg_conf2 = np.mean(all_confs2, axis=0)
-    # print(f"Mushroom Accuracy: {avg_acc2}, Confusion Matrix: {avg_conf2}")
+    total_acc2 = 0
+    all_confs2 = []
+    for _ in range(ALGO_RUNS):
+        treeMushroom = Tree("data/mushroom/agaricus-lepiota-new-4.data")
+        acc2 = treeMushroom.accuracy
+        conf2 = treeMushroom.calculate_confusion_matrix(
+            test_data=treeMushroom.test_data,
+            positive_class="e",
+            negative_class="p",
+        )
+        total_acc2 += acc2
+        all_confs2.append(conf2)
 
+    avg_acc2 = total_acc2 / ALGO_RUNS
+    avg_conf2 = np.mean(all_confs2, axis=0)
+    print(f"Mushroom Accuracy: {avg_acc2}, Confusion Matrix: {avg_conf2}")
 
-def main2():
-    data = pd.read_csv("data/mushroom/agaricus-lepiota.data", header=None)
-    new_data = data.iloc[:, data.columns != 11]
-    new_data.to_csv("data/mushroom/agaricus-lepiota-new-4.data", index=False)
+    TP, TN, FP, FN = avg_conf2
+    czulosc = TP / (TP + FN)
+    swoistosc = TN / (TN + FP)
+    precyzja = TP / (TP + FP)
+    dokladnosc = (TP + TN) / (TP + TN + FP + FN)
+    print(f"czulosc: {czulosc}")
+    print(f"swoistosc: {swoistosc}")
+    print(f"precyzja: {precyzja}")
+    print(f"dokladnosc: {dokladnosc}")
 
 
 if __name__ == "__main__":
-    main2()
+    main()
