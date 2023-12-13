@@ -119,10 +119,12 @@ class Tree:
 
 
 def main():
+    ALGO_RUNS = 10
+
     total_acc1 = 0
     all_confs1 = []
-    for _ in range(20):
-        treeBreastCancer = Tree("data/breast-cancer/breast-cancer.data")
+    for _ in range(ALGO_RUNS):
+        treeBreastCancer = Tree("data/breast-cancer/breast-cancer-new.data")
         acc1 = treeBreastCancer.accuracy
         conf1 = treeBreastCancer.calculate_confusion_matrix(
             test_data=treeBreastCancer.test_data,
@@ -132,35 +134,33 @@ def main():
         total_acc1 += acc1
         all_confs1.append(conf1)
 
-    avg_acc1 = total_acc1 / 20
+    avg_acc1 = total_acc1 / ALGO_RUNS
     avg_conf1 = np.mean(all_confs1, axis=0)
+    print(f"Breast Cancer Accuracy: {avg_acc1}, Confusion Matrix: {avg_conf1}")
 
-    total_acc2 = 0
-    all_confs2 = []
-    for _ in range(20):
-        treeMushroom = Tree("data/mushroom/agaricus-lepiota.data")
-        acc2 = treeMushroom.accuracy
-        conf2 = treeMushroom.calculate_confusion_matrix(
-            test_data=treeMushroom.test_data,
-            positive_class="e",
-            negative_class="p",
-        )
-        total_acc2 += acc2
-        all_confs2.append(conf2)
+    # total_acc2 = 0
+    # all_confs2 = []
+    # for _ in range(ALGO_RUNS):
+    #     treeMushroom = Tree("data/mushroom/agaricus-lepiota-new.data")
+    #     acc2 = treeMushroom.accuracy
+    #     conf2 = treeMushroom.calculate_confusion_matrix(
+    #         test_data=treeMushroom.test_data,
+    #         positive_class="e",
+    #         negative_class="p",
+    #     )
+    #     total_acc2 += acc2
+    #     all_confs2.append(conf2)
 
-    avg_acc2 = total_acc2 / 20
-    avg_conf2 = np.mean(all_confs2, axis=0)
-
-    print(
-        f"Breast Cancer Accuracy: {avg_acc1}, Confusion Matrix: {avg_conf1}\nMustroom Accuracy: {avg_acc2}, Confusion Matrix: {avg_conf2}"
-    )
+    # avg_acc2 = total_acc2 / ALGO_RUNS
+    # avg_conf2 = np.mean(all_confs2, axis=0)
+    # print(f"Mushroom Accuracy: {avg_acc2}, Confusion Matrix: {avg_conf2}")
 
 
-# def main2():
-#     data = pd.read_csv("data/breast-cancer/breast-cancer.data", header=None)
-#     new_data = data.drop_duplicates(subset=data.columns[:-1], keep=False)
-#     new_data.to_csv("data/breast-cancer/breast-cancer-new.data", index=False)
+def main2():
+    data = pd.read_csv("data/mushroom/agaricus-lepiota.data", header=None)
+    new_data = data.iloc[:, data.columns != 11]
+    new_data.to_csv("data/mushroom/agaricus-lepiota-new-4.data", index=False)
 
 
 if __name__ == "__main__":
-    main()
+    main2()
