@@ -8,7 +8,7 @@ def load_data_frame_u(
     skiprows: int = 0,
     cut_cols: List[str] = [],
 ) -> pd.DataFrame:
-    data = pd.read_csv(path, skiprows=skiprows)
+    data = pd.read_csv(path, skiprows=skiprows, header=None, names=None)
 
     cols = list(data.columns)
     cols = cols[1:] + [cols[0]]
@@ -41,7 +41,3 @@ def calculate_entropy_u(data: pd.DataFrame):
         probability = np.sum(class_col == unique_class_val) / len(class_col)
         entropy -= probability * np.log2(probability)
     return entropy
-
-
-# def remove_data_duplicate(data: pd.DataFrame) -> pd.DataFrame:
-#     return data.drop_duplicates(subset=data.columns[1:], keep=False)

@@ -9,7 +9,7 @@ from utils import calculate_entropy_u, load_data_frame_u, split_train_data_u
 
 class Node:
     def __init__(self, most_common_attribute_choice: str):
-        self.decision_attribute: str = ""
+        self.decision_attribute_idx: int = -1
         self.decision_attribute_choices: Dict[str, Union[Node, str]] = {}
         self.most_common_attribute_choice = most_common_attribute_choice
 
@@ -29,8 +29,8 @@ class Tree:
         if isinstance(tree, str):
             return tree
 
-        attribute = tree.decision_attribute
-        attribute_value = instance[attribute]
+        attribute_idx = tree.decision_attribute_idx
+        attribute_value = instance[attribute_idx]
         if attribute_value not in tree.decision_attribute_choices:
             return tree.most_common_attribute_choice
         return self.classify(
@@ -74,18 +74,15 @@ class Tree:
                 correct += 1
         return correct / len(test_data)
 
-    def _get_most_informative_attribute(self, data: pd.DataFrame) -> str:
+    def _get_most_informative_attribute_idx(self, data: pd.DataFrame) -> int:
         attribute_gains = [
             (attribute, self._calculate_gain(data, attribute))
             for attribute in data.columns[:-1]
         ]
-
-        return max(attribute_gains, key=lambda x: x[1])[0]
+        max_val = max(attribute_gains, key=lambda x: x[1])
+        return attribute_gains.index(max_val)
 
     def _build_tree(self, data: pd.DataFrame, tree: Node | None = None):
-        # Get the feature with the highest information gain
-        attribute = self._get_most_informative_attribute(data)
-
         # If all attrubites have only one value, return the most common class
         each_col_ony_one_val = [
             data[col_name].nunique() == 1 for col_name in data.columns[:-1]
@@ -98,20 +95,24 @@ class Tree:
         if len(np.unique(data[data.columns[-1]])) == 1:
             return np.unique(data[data.columns[-1]])[0]
 
+        # Get the feature with the highest information gain
+        attribute_idx = self._get_most_informative_attribute_idx(data)
+
         # Continue building the tree
         if tree is None:
             tree = Node(Counter(data[data.columns[-1]]).most_common(1)[0][0])
 
-        attr_unique_values = np.unique(data[attribute])
+        attr_unique_values = np.unique(data[data.columns[attribute_idx]])
         for value in attr_unique_values:
-            sub_data = data.where(data[attribute] == value).dropna()
+            sub_data = data.where(data[data.columns[attribute_idx]] == value).dropna()
             classes_col = sub_data[sub_data.columns[-1]]  # Get the classes column
             class_value, counts = np.unique(classes_col, return_counts=True)
             if len(counts) == 1:
-                tree.decision_attribute = attribute
+                tree.decision_attribute_idx = attribute_idx
                 tree.add_child(value, class_value[0])
             else:
-                tree.decision_attribute = attribute
+                tree.decision_attribute_idx = attribute_idx
+                sub_data = sub_data.drop(columns=[sub_data.columns[attribute_idx]])
                 tree.add_child(value, self._build_tree(sub_data))
 
         return tree
@@ -137,7 +138,7 @@ def main():
     # total_acc2 = 0
     # all_confs2 = []
     # for _ in range(20):
-    treeMushroom = Tree("data/breast-cancer/breast-cancer.data")
+    treeMushroom = Tree("data/breast-cancer/breast-cancer-new-g.csv")
     acc2 = treeMushroom.accuracy
     conf2 = treeMushroom.calculate_confusion_matrix(
         test_data=treeMushroom.test_data,
@@ -155,6 +156,12 @@ def main():
     # print(
     #     f"Breast Cancer Accuracy: {avg_acc1}, Confusion Matrix: {avg_conf1}\nMustroom Accuracy: {avg_acc2}, Confusion Matrix: {avg_conf2}"
     # )
+
+
+# def main2():
+#     data = pd.read_csv("data/breast-cancer/breast-cancer.data", header=None)
+#     new_data = data.drop_duplicates(subset=data.columns[:-1], keep=False)
+#     new_data.to_csv("data/breast-cancer/breast-cancer-new.data", index=False)
 
 
 if __name__ == "__main__":
