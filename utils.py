@@ -12,10 +12,6 @@ def load_data_frame_u(
         path, skiprows=skiprows, header=None, names=None, index_col=False
     )
 
-    # cols = list(data.columns)
-    # cols = cols[1:] + [cols[0]]
-    # data = data[cols]
-
     for col in cut_cols:
         data = data.drop(col, axis=1)
     return data
