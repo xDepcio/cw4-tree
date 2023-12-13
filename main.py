@@ -45,12 +45,12 @@ class Tree:
 
         for row in test_data.iloc:
             if self.classify(row, self.root) == positive_class:
-                if row.iloc[-1] == positive_class:
+                if row.iloc[0] == positive_class:
                     tp += 1
                 else:
                     fp += 1
             else:
-                if row.iloc[-1] == negative_class:
+                if row.iloc[0] == negative_class:
                     tn += 1
                 else:
                     fn += 1
@@ -70,50 +70,58 @@ class Tree:
     def _calculate_accuracy(self, test_data: pd.DataFrame, tree: Node):
         correct = 0
         for row in test_data.iloc:
-            if self.classify(row, tree) == row.iloc[-1]:
+            if self.classify(row, tree) == row.iloc[0]:
                 correct += 1
         return correct / len(test_data)
 
     def _get_most_informative_attribute_idx(self, data: pd.DataFrame) -> int:
         attribute_gains = [
             (attribute, self._calculate_gain(data, attribute))
-            for attribute in data.columns[:-1]
+            for attribute in data.columns[1:]
         ]
         max_val = max(attribute_gains, key=lambda x: x[1])
-        return attribute_gains.index(max_val)
+        return int(max_val[0])
 
     def _build_tree(self, data: pd.DataFrame, tree: Node | None = None):
         # If all attrubites have only one value, return the most common class
         each_col_ony_one_val = [
-            data[col_name].nunique() == 1 for col_name in data.columns[:-1]
+            data[col_name].nunique() == 1 for col_name in data.columns[1:]
         ]
         if all(each_col_ony_one_val):
             # Counter - buffed dictionary
-            return Counter(data[data.columns[-1]]).most_common(1)[0][0]
+            return Counter(data[data.columns[0]]).most_common(1)[0][0]
 
         # If class col has only one value, return it
-        if len(np.unique(data[data.columns[-1]])) == 1:
-            return np.unique(data[data.columns[-1]])[0]
+        if len(np.unique(data[data.columns[0]])) == 1:
+            return np.unique(data[data.columns[0]])[0]
 
         # Get the feature with the highest information gain
         attribute_idx = self._get_most_informative_attribute_idx(data)
 
+        # test1 = data[data.columns[5]]
+        # test2 = data.columns[5]
+        # test3 = data.iloc[:, 5]
+        # test4 = data[5]
+        # test5 = data.columns[data[5]]
+
         # Continue building the tree
         if tree is None:
-            tree = Node(Counter(data[data.columns[-1]]).most_common(1)[0][0])
+            tree = Node(Counter(data[0]).most_common(1)[0][0])
 
-        attr_unique_values = np.unique(data[data.columns[attribute_idx]])
+        attr_unique_values = np.unique(data[attribute_idx])
         for value in attr_unique_values:
-            sub_data = data.where(data[data.columns[attribute_idx]] == value).dropna()
-            classes_col = sub_data[sub_data.columns[-1]]  # Get the classes column
+            sub_data = data.where(data[attribute_idx] == value).dropna()
+            classes_col = sub_data[sub_data.columns[0]]  # Get the classes column
             class_value, counts = np.unique(classes_col, return_counts=True)
             if len(counts) == 1:
                 tree.decision_attribute_idx = attribute_idx
                 tree.add_child(value, class_value[0])
             else:
                 tree.decision_attribute_idx = attribute_idx
-                sub_data = sub_data.drop(columns=[sub_data.columns[attribute_idx]])
-                tree.add_child(value, self._build_tree(sub_data))
+                # sub_data_test = sub_data.drop(columns=[sub_data.columns[attribute_idx]])
+                # sub_data_test2 = sub_data.iloc[:, sub_data.columns != attribute_idx]
+                sub_data_new = sub_data.iloc[:, sub_data.columns != attribute_idx]
+                tree.add_child(value, self._build_tree(sub_data_new))
 
         return tree
 
