@@ -121,7 +121,7 @@ class Tree:
 def main():
     total_acc1 = 0
     all_confs1 = []
-    for _ in range(50):
+    for _ in range(20):
         treeBreastCancer = Tree("data/breast-cancer/breast-cancer.data")
         acc1 = treeBreastCancer.accuracy
         conf1 = treeBreastCancer.calculate_confusion_matrix(
@@ -132,12 +132,12 @@ def main():
         total_acc1 += acc1
         all_confs1.append(conf1)
 
-    avg_acc1 = total_acc1 / 50
+    avg_acc1 = total_acc1 / 20
     avg_conf1 = np.mean(all_confs1, axis=0)
 
     total_acc2 = 0
     all_confs2 = []
-    for _ in range(50):
+    for _ in range(20):
         treeMushroom = Tree("data/mushroom/agaricus-lepiota.data")
         acc2 = treeMushroom.accuracy
         conf2 = treeMushroom.calculate_confusion_matrix(
@@ -145,12 +145,10 @@ def main():
             positive_class="e",
             negative_class="p",
         )
-        print(acc2)
-        print(conf2)
         total_acc2 += acc2
         all_confs2.append(conf2)
 
-    avg_acc2 = total_acc2 / 50
+    avg_acc2 = total_acc2 / 20
     avg_conf2 = np.mean(all_confs2, axis=0)
 
     print(
